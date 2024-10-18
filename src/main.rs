@@ -25,5 +25,24 @@ fn main() {
     println!(
         "file: {}; n threads: {}; batch size: {}",
         pgn_file, n_threads, batch_size
-    )
+    );
+    let mut found_game_string = false;
+    let mut count = 0usize;
+
+    // File hosts.txt must exist in the current path
+    if let Ok(lines) = read_lines(pgn_file) {
+        // Consumes the iterator, returns an (Optional) String
+        for line in lines.flatten() {
+            let stripped = line.trim();
+            if stripped.is_empty() {
+                found_game_string = !found_game_string;
+            } else {
+                count += 1;
+                if found_game_string {
+                    println!("{}", stripped);
+                }
+            }
+        }
+        println!("Found {count} games")
+    }
 }
