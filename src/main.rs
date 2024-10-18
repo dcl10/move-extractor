@@ -52,6 +52,17 @@ fn parse_winner(game: &str) -> (String, isize) {
     ("".to_string(), 0)
 }
 
+fn make_file<P>(path: P) -> io::Result<File>
+where
+    P: AsRef<Path>,
+{
+    OpenOptions::new()
+        .write(true)
+        .append(true)
+        .create(true)
+        .open(path)
+}
+
 fn main() {
     let args: Args = Args::parse();
     let n_threads = args.n_threads;
@@ -63,10 +74,10 @@ fn main() {
     );
     let mut found_game_string = false;
 
-    // File hosts.txt must exist in the current path
     if let Ok(lines) = read_lines(pgn_file) {
-        // Consumes the iterator, returns an (Optional) String
         let mut output: Vec<String> = Vec::new();
+        // Extract games
+        println!("Extracting games...");
         for line in lines.flatten() {
             let stripped = line.trim();
             if stripped.is_empty() {
@@ -77,11 +88,7 @@ fn main() {
                 output.push(game_string);
             } else {
                 // write output to file
-                let file = OpenOptions::new()
-                    .write(true)
-                    .append(true)
-                    .create(true)
-                    .open("./results.txt");
+                let file = make_file("./results.txt");
                 match file {
                     Ok(mut f) => {
                         if !output.is_empty() {
@@ -95,6 +102,19 @@ fn main() {
                 }
                 // reset output
                 output = Vec::new()
+            }
+        }
+        // Split into game moves and winners
+        println!("Separating games and winners...");
+        if let Ok(games) = read_lines("./results.txt") {
+            for game in games.flatten() {
+                let (g, w) = parse_winner(&game);
+                if let Ok(mut gf) = make_file("./games.txt") {
+                    writeln!(gf, "{g}").unwrap()
+                }
+                if let Ok(mut wf) = make_file("./winners.txt") {
+                    writeln!(wf, "{w}").unwrap()
+                }
             }
         }
     }
