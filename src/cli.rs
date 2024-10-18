@@ -3,7 +3,12 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Args {
-    #[arg(short, long, help = "The number of threads to use")]
+    #[arg(
+        short,
+        long,
+        default_value_t = 1,
+        help = "The number of threads to use"
+    )]
     pub n_threads: usize,
     #[arg(
         short,
