@@ -1,6 +1,6 @@
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::io;
-use std::io::BufRead;
+use std::io::{BufRead, Write};
 use std::path::Path;
 
 use clap::Parser;
@@ -22,7 +22,7 @@ where
 
 fn remove_move_counts(line: &str) -> String {
     let haystack = String::from(line);
-    let pattern = Regex::new(r"\d+\.\s+").unwrap();
+    let pattern = Regex::new(r"\d+\.\s*").unwrap();
 
     let result = pattern.replace_all(&haystack, "");
     result.to_string()
@@ -38,23 +38,41 @@ fn main() {
         pgn_file, n_threads, batch_size
     );
     let mut found_game_string = false;
-    let mut count = 0usize;
 
     // File hosts.txt must exist in the current path
     if let Ok(lines) = read_lines(pgn_file) {
         // Consumes the iterator, returns an (Optional) String
+        let mut output: Vec<String> = Vec::new();
         for line in lines.flatten() {
             let stripped = line.trim();
             if stripped.is_empty() {
                 found_game_string = !found_game_string;
+            }
+            if found_game_string {
+                let game_string = remove_move_counts(stripped);
+                output.push(game_string);
             } else {
-                count += 1;
-                if found_game_string {
-                    println!("{}", stripped);
+                // write output to file
+                let file = OpenOptions::new()
+                    .write(true)
+                    .append(true)
+                    .create(true)
+                    .open("./results.txt");
+                match file {
+                    Ok(mut f) => {
+                        if !output.is_empty() {
+                            let mut text = output.join(" ");
+                            // Sometimes there are 2 spaces instead of just one
+                            text = text.replace("  ", " ");
+                            writeln!(f, "{}", text).unwrap()
+                        }
+                    }
+                    Err(e) => println!("{e}"),
                 }
+                // reset output
+                output = Vec::new()
             }
         }
-        println!("Found {count} games")
     }
 }
 
