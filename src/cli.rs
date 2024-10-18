@@ -3,6 +3,8 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Args {
+    /// The PGN file to parse
+    pub pgn: String,
     #[arg(
         short,
         long,
